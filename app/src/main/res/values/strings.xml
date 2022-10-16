@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">AddressSearchApp</string>
+    <string name="postal_code_text">郵便番号を入力してください</string>
+    <string name="postal_code_hint">1234567</string>
+    <string name="submit">検索</string>
 </resources>
