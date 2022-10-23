@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">AddressSearchApp</string>
+    
+    <!-- activity_main.xml -->
     <string name="postal_code_text">郵便番号を入力してください</string>
     <string name="postal_code_hint">1234567</string>
     <string name="submit">検索</string>
+    
+    <!-- MainActivity.java -->
+    <string name="inputWarning">7桁まで入力してください</string>
 </resources>
