@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
             String postalCode = getText.toString();
 
             // UiInfoTaskをインスタンス化&getAddressメソッドの実行
-            UiInfoTask uiInfoTask = new UiInfoTask(getJSONProcessing(getAddress(postalCode)));
+            UiInfoTask uiInfoTask = new UiInfoTask(getYahooAPI(getJSONProcessing(getAddress(postalCode))));
 
             // Handlerオブジェクトを生成した元スレッドで画面描画の処理を行わせる
             _handler.post(uiInfoTask);
@@ -113,16 +113,14 @@ public class MainActivity extends AppCompatActivity {
 
     // 郵便番号検索APIから住所を取得するメソッド
     private String getAddress(String urlSt) {
-        // ベースとなるURL
-        String urlModel = "https://zipcloud.ibsnet.co.jp/api/search?zipcode=";
-
-        // HTTP接続のレスポンスデータとして取得するInputStreamオブジェクトを宣言
+        // リクエストURL
+        String requestURL = "https://zipcloud.ibsnet.co.jp/api/search?zipcode=" + urlSt;
 
         // 郵便番号検索APIから取得したJSON文字列を格納する
         String result = null;
         try {
             // URLオブジェクトを生成
-            URL url = new URL(urlModel + urlSt);
+            URL url = new URL(requestURL);
             // URLオブジェクトからHttpURLConnectionオブジェクトを取得
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
 
@@ -189,7 +187,58 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // YahooAPIから緯度経度を取得するメソッド
+    private String getYahooAPI(String address) {
+        // apiKey
+        String apiKey = "dj00aiZpPTJibE1aWXQyU2ZleCZzPWNvbnN1bWVyc2VjcmV0Jng9ODY-";
+        // リクエストURL
+        String requestURL = "https://map.yahooapis.jp/geocode/V1/geoCoder?output=json&recursive=true&appid=" + apiKey + "&query=" + address;
+        // 郵便番号検索APIから取得したJSON文字列を格納する
+        String result = null;
 
+        try {
+            // URLオブジェクトを生成
+            URL url = new URL(requestURL);
+            // URLオブジェクトからHttpURLConnectionオブジェクトを取得
+            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+            // データ取得に使っても良い時間を設定
+            urlConnection.setReadTimeout(3000);
+            // 接続に使っても良い時間を設定
+            urlConnection.setConnectTimeout(3000);
+
+            // リクエストメソッド
+            urlConnection.setRequestMethod("GET");
+
+            // 接続
+            urlConnection.connect();
+
+            // レスポンスデータを取得
+            try (InputStream inputStream = urlConnection.getInputStream()) {
+                // レスポンスデータであるInputStreamオブジェクトを文字列に変換
+                result = isString(inputStream);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+
+            // HttpURLConnectionオブジェクトを開放
+            urlConnection.disconnect();
+
+        }
+        catch (SocketException e) {
+            Log.d("SocketException", "通信タイムアウト", e);
+        }
+        catch (IOException e) {
+            Log.d("IOException", "通信失敗", e);
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
+    // YahooAPIから取得したJSONデータを加工するメソッド
+//    private String getYahooJSONProcessing(String _result) {
+//
+//    }
 
     // InputStreamオブジェクトを文字列に変換するメソッド
     private String isString(InputStream is) throws IOException {
