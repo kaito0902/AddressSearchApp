@@ -1,5 +1,7 @@
 package com.sghh.addresssearchapp;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -86,11 +88,22 @@ public class MainActivity extends AppCompatActivity {
             // getTextを文字列に変換し格納
             String postalCode = getText.toString();
 
-            // UiInfoTaskをインスタンス化&getAddressメソッドの実行
-            UiInfoTask uiInfoTask = new UiInfoTask(getYahooAPI(getJSONProcessing(getAddress(postalCode))));
+            // 郵便番号検索APIから取得したJSON文字列を格納する変数
+            String addressJSON = getAddress(postalCode);
+            // addressJSONを住所の形に加工した文字列を格納する変数
+            String processingJSON = getJSONProcessing(addressJSON);
+            // YahooAPIから取得したJSON文字列を格納する変数
+            String yahooJSON = getYahooAPI(processingJSON);
+            // yahooJSONの座標を取得する変数
+            String coordinatesJSON = getYahooJSONProcessing(yahooJSON);
+            // yahooJSONで取得した座標でgoogleMAPを表示
+            googleMap(coordinatesJSON);
+
+            // UiInfoTaskをインスタンス化
+//            UiInfoTask uiInfoTask = new UiInfoTask(coordinatesJSON);
 
             // Handlerオブジェクトを生成した元スレッドで画面描画の処理を行わせる
-            _handler.post(uiInfoTask);
+//            _handler.post(uiInfoTask);
         }
     }
 
@@ -125,9 +138,9 @@ public class MainActivity extends AppCompatActivity {
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
 
             // データ取得に使っても良い時間を設定
-            urlConnection.setReadTimeout(3000);
+            urlConnection.setReadTimeout(5000);
             // 接続に使っても良い時間を設定
-            urlConnection.setConnectTimeout(3000);
+            urlConnection.setConnectTimeout(5000);
 
             // リクエストメソッド
             urlConnection.setRequestMethod("GET");
@@ -236,9 +249,55 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // YahooAPIから取得したJSONデータを加工するメソッド
-//    private String getYahooJSONProcessing(String _result) {
-//
-//    }
+    private String getYahooJSONProcessing(String _result) {
+        // 座標
+        String coordinates = null;
+
+        try {
+            // JSONObjectオブジェクトを_resultを引数に生成
+            JSONObject jsonObject = new JSONObject(_result);
+            // 配列データをgetJSONArray()で取得
+            JSONArray arrayJSON = jsonObject.getJSONArray("Feature");
+            // 配列データを取り出すためgetJSONObject()で1番目のデータを取得
+            JSONObject addressJSON = arrayJSON.getJSONObject(0);
+
+            // Geometryを取得
+            JSONObject geometryJSON = addressJSON.getJSONObject("Geometry");
+            // 座標を取得
+            coordinates = geometryJSON.getString("Coordinates");
+
+            // 座標を緯度経度の順番に並び替え
+            // (,)の文字列位置を取得
+            int position = coordinates.indexOf(",");
+            // 緯度を取得
+            String lat = coordinates.substring(position);
+            // latから(,)を削除
+            lat = lat.replace(",", "");
+            // 経度を取得
+            String lon = coordinates.substring(0, position);
+            // 座標を再作成
+            coordinates = lat + "," + lon;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return coordinates;
+    }
+
+    // Google Mapを起動するIntentを投げるメソッド
+    private void googleMap(String coordinates) {
+        // Create a Uri from an intent string. Use the result to create an Intent.
+        Uri gmmIntentUri = Uri.parse("google.streetview:cbll=" + coordinates);
+
+        // Create an Intent from gmmIntentUri. Set the action to ACTION_VIEW
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        // Make the Intent explicit by setting the Google Maps package
+        mapIntent.setPackage("com.google.android.apps.maps");
+
+        // Attempt to start an activity that can handle the Intent
+        startActivity(mapIntent);
+
+
+    }
 
     // InputStreamオブジェクトを文字列に変換するメソッド
     private String isString(InputStream is) throws IOException {
